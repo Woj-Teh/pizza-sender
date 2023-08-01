@@ -5,12 +5,17 @@ package com.example.pizzasender.applicationController;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
@@ -24,32 +29,43 @@ import java.util.concurrent.TimeUnit;
 
 @SpringBootApplication
 @RestController
+@RequestMapping("/pizza")
 public class PizzaSenderController {
     private List<Pizza> createPizzas() {
         List<Pizza> pizzas = new ArrayList<>();
         pizzas.add(new Pizza("Margarita", Arrays.asList("sauce", "mozzarella"), 25));
         pizzas.add(new Pizza("Pepperoni", Arrays.asList("sauce", "mozzarella", "pepperoni"), 30));
         pizzas.add(new Pizza("Hawaii", Arrays.asList("sauce", "mozzarella", "ham", "pineapple"), 40));
+        // Add more pizza variations if needed
         return pizzas;
     }
 
     private final String receiverUrl = "http://localhost:8081/pizza-receiver";
 
-    // Remove @Autowired since RestTemplate is provided by RestTemplateConfig
-    private final RestTemplate restTemplate;
+    @Autowired
+    private RestTemplate restTemplate;
 
-    public PizzaSenderController(RestTemplate restTemplate) {
-        this.restTemplate = restTemplate;
-    }
+    @Value("${pizzas.per.second.default:10}")
+    private int pizzasPerSecondDefault;
 
-    @GetMapping("/send-pizzas")
-    public ResponseEntity<String> sendPizzas() {
+    @Value("${sending.duration.seconds.default:10}")
+    private int sendingDurationSecondsDefault;
+
+    @GetMapping("/send")
+    public ResponseEntity<String> sendPizzas(
+            @RequestParam(value = "pizzasPerSecond", required = false) Integer pizzasPerSecond,
+            @RequestParam(value = "sendingDurationSeconds", required = false) Integer sendingDurationSeconds
+    ) {
+        int pizzasPerSec = pizzasPerSecond != null ? pizzasPerSecond : pizzasPerSecondDefault;
+        int sendingDurationSec = sendingDurationSeconds != null ? sendingDurationSeconds : sendingDurationSecondsDefault;
+
         List<Pizza> pizzas = createPizzas();
+        int totalPizzasToSend = pizzasPerSec * sendingDurationSec;
 
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
-        // Schedule sending each pizza separately with a delay of 250 milliseconds
-        for (int i = 0; i < 20; i++) {
+        // Schedule sending pizzas with the desired rate
+        for (int i = 0; i < totalPizzasToSend; i++) {
             Pizza randomPizza = pizzas.get(new Random().nextInt(pizzas.size()));
 
             scheduler.schedule(() -> {
@@ -58,11 +74,8 @@ public class PizzaSenderController {
 
                 HttpEntity<String> requestEntity = new HttpEntity<>(randomPizzaToJsonString(randomPizza), headers);
                 restTemplate.postForEntity(receiverUrl, requestEntity, Void.class);
-            }, i * 250, TimeUnit.MILLISECONDS);
+            }, i * 1000 / pizzasPerSec, TimeUnit.MILLISECONDS);
         }
-
-        // Stop sending after 5 seconds (if needed)
-        // scheduler.schedule(() -> scheduler.shutdown(), 5, TimeUnit.SECONDS);
 
         return ResponseEntity.ok("Sending pizzas in progress!");
     }
@@ -77,8 +90,9 @@ public class PizzaSenderController {
             return "{}"; // Return an empty JSON object as a fallback
         }
     }
-}
 
+    // ... (other methods if needed)
+}
 
 
 
