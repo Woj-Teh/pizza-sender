@@ -4,53 +4,65 @@ package com.example.pizzasender.applicationController;
 
 // PizzaController.java
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
-@Controller
+
 public class PizzaSenderController {
 
-    private static final String RECEIVER_URL = "http://localhost:8081/pizza-receiver";
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Autowired
-    private RestTemplate restTemplate;
+    // Method to convert each Pizza to a JSON object
+    private static String convertPizzaToJson(Pizza pizza) throws JsonProcessingException {
+        return objectMapper.writeValueAsString(pizza);
+    }
 
-    @PostMapping("/send-pizza")
-    public ResponseEntity<String> sendPizza() {
-        // Create the Pizza object for Margarita pizza
-        System.out.println("Sending pizza data:");
-        Pizza margaritaPizza = new Pizza();
-        margaritaPizza.setName("Margarita");
-        margaritaPizza.setIngredients(Arrays.asList("sauce", "mozzarella"));
-        margaritaPizza.setPrice(25.0);
+    // Method to send the JSON string to the receiver app
+    private static void sendPizzaToReceiver(String pizzaJson) throws IOException, InterruptedException {
+        HttpClient httpClient = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:8081/pizza-receiver"))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(pizzaJson))
+                .build();
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Content-Type", "application/json");
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        System.out.println("Response status code: " + response.statusCode());
+        System.out.println("Response body: " + response.body());
+    }
 
-        // Log the data being sent to the console
-        System.out.println("Sending pizza data:");
-        System.out.println(margaritaPizza);
+    // Create and send the list of pizzas to the receiver app
+    private static void createAndSendPizzas() throws JsonProcessingException, IOException, InterruptedException {
+        List<Pizza> pizzas = new ArrayList<>();
+        pizzas.add(new Pizza("Margarita", Arrays.asList("sauce", "mozzarella"), 25));
+        pizzas.add(new Pizza("Pepperoni", Arrays.asList("sauce", "mozzarella", "pepperoni"), 30));
+        pizzas.add(new Pizza("Hawaii", Arrays.asList("sauce", "mozzarella", "ham", "pineapple"), 40));
 
-        HttpEntity<Pizza> requestEntity = new HttpEntity<>(margaritaPizza, headers);
+        for (Pizza pizza : pizzas) {
+            String pizzaJson = convertPizzaToJson(pizza);
+            System.out.println(pizzaJson);
+            sendPizzaToReceiver(pizzaJson);
+        }
+    }
 
-        ResponseEntity<String> responseEntity = restTemplate.exchange(
-                RECEIVER_URL,
-                HttpMethod.POST,
-                requestEntity,
-                String.class
-        );
+    public static void main(String[] args) throws JsonProcessingException, IOException, InterruptedException {
+        createAndSendPizzas();
 
-        return ResponseEntity.ok(responseEntity.getBody());
     }
 }
+
+
+
 
 
 
