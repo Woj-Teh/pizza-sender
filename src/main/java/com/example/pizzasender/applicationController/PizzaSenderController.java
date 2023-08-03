@@ -1,5 +1,6 @@
 package com.example.pizzasender.applicationController;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -31,6 +32,9 @@ import java.util.concurrent.TimeUnit;
 @RestController
 @RequestMapping("/pizza")
 public class PizzaSenderController {
+
+    private static final Logger logger = LoggerFactory.getLogger(PizzaSenderController.class);
+
     private List<Pizza> createPizzas() {
         List<Pizza> pizzas = new ArrayList<>();
         pizzas.add(new Pizza("Margarita", Arrays.asList("sauce", "mozzarella"), 25));
@@ -40,7 +44,7 @@ public class PizzaSenderController {
         return pizzas;
     }
 
-    private final String receiverUrl = "http://localhost:8081/pizza-receiver";
+    private final String receiverUrl = "https://pizza-receiver-git-wod-project.apps.sandbox02.kmdstratus.com";
 
     @Autowired
     private RestTemplate restTemplate;
@@ -74,6 +78,9 @@ public class PizzaSenderController {
 
                 HttpEntity<String> requestEntity = new HttpEntity<>(randomPizzaToJsonString(randomPizza), headers);
                 restTemplate.postForEntity(receiverUrl, requestEntity, Void.class);
+
+                // Use the logger to log the pizza being sent
+                logger.info("Sending pizza: " + randomPizza.getName());
             }, i * 1000 / pizzasPerSec, TimeUnit.MILLISECONDS);
         }
 
@@ -86,13 +93,12 @@ public class PizzaSenderController {
         try {
             return objectMapper.writeValueAsString(pizza);
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
+            logger.error("Error converting pizza to JSON: " + e.getMessage());
             return "{}"; // Return an empty JSON object as a fallback
         }
     }
 
 }
-
 
 
 
