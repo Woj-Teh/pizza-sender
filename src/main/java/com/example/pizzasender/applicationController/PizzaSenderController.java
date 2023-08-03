@@ -44,7 +44,7 @@ public class PizzaSenderController {
         return pizzas;
     }
 
-    private final String receiverUrl = "https://pizza-receiver-git-wod-project.apps.sandbox02.kmdstratus.com";
+    private final String receiverUrl = "https://pizza-receiver-git-wod-project.apps.sandbox02.kmdstratus.com/pizza-receiver";
 
     @Autowired
     private RestTemplate restTemplate;
