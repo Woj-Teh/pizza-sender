@@ -1,4 +1,8 @@
 package com.example.pizzasender.applicationController;
+import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.ssl.SSLContexts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,6 +24,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
+import javax.net.ssl.SSLContext;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -32,8 +40,13 @@ import java.util.concurrent.TimeUnit;
 @RestController
 @RequestMapping("/pizza")
 public class PizzaSenderController {
+    SSLContext sslContext = SSLContexts.custom().loadTrustMaterial(new TrustSelfSignedStrategy()).build();
+    CloseableHttpClient httpClient = HttpClients.custom().setSslcontext(sslContext).build();
 
     private static final Logger logger = LoggerFactory.getLogger(PizzaSenderController.class);
+
+    public PizzaSenderController() throws NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+    }
 
     private List<Pizza> createPizzas() {
         List<Pizza> pizzas = new ArrayList<>();
@@ -44,7 +57,7 @@ public class PizzaSenderController {
         return pizzas;
     }
 
-    private final String receiverUrl = "http://pizza-receiver.wod-project.svc.cluster.local/pizza-receiver";
+    private final String receiverUrl = "https://pizza-receiver-git-wod-project.apps.sandbox02.kmdstratus.com/pizza-receiver";
 
     @Autowired
     private RestTemplate restTemplate;
