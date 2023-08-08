@@ -40,8 +40,6 @@ import java.util.concurrent.TimeUnit;
 @RestController
 @RequestMapping("/pizza")
 public class PizzaSenderController {
-    SSLContext sslContext = SSLContexts.custom().loadTrustMaterial(new TrustSelfSignedStrategy()).build();
-    CloseableHttpClient httpClient = HttpClients.custom().setSslcontext(sslContext).build();
 
     private static final Logger logger = LoggerFactory.getLogger(PizzaSenderController.class);
 
@@ -57,7 +55,7 @@ public class PizzaSenderController {
         return pizzas;
     }
 
-    private final String receiverUrl = "https://pizza-receiver-git-wod-project.apps.sandbox02.kmdstratus.com/pizza-receiver";
+    private final String receiverUrl = "http://pizza-receiver.wod-project.svc.cluster.local/pizza-receiver";
 
     @Autowired
     private RestTemplate restTemplate;
