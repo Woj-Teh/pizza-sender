@@ -1,8 +1,5 @@
 package com.example.pizzasender.applicationController;
-import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.ssl.SSLContexts;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,11 +57,16 @@ public class PizzaSenderController {
     @Autowired
     private RestTemplate restTemplate;
 
-    @Value("${pizzas.per.second.default:10}")
+    @Value("${pizzas.per.second.default:1000}")
     private int pizzasPerSecondDefault;
 
-    @Value("${sending.duration.seconds.default:10}")
+    @Value("${sending.duration.seconds.default:300}")
     private int sendingDurationSecondsDefault;
+
+    @EventListener(ApplicationReadyEvent.class)
+    public void onApplicationEvent() {
+        sendPizzas(null, null);
+    }
 
     @GetMapping("/send")
     public ResponseEntity<String> sendPizzas(
@@ -108,11 +110,4 @@ public class PizzaSenderController {
             return "{}"; // Return an empty JSON object as a fallback
         }
     }
-
 }
-
-
-
-
-
-
