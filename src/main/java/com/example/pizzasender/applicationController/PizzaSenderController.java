@@ -57,15 +57,15 @@ public class PizzaSenderController {
     @Autowired
     private RestTemplate restTemplate;
 
-    @Value("${pizzas.per.second.default:1000}")
+    @Value("${pizzas.per.second.default:10}")
     private int pizzasPerSecondDefault;
 
-    @Value("${sending.duration.seconds.default:300}")
+    @Value("${sending.duration.seconds.default:30}")
     private int sendingDurationSecondsDefault;
 
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationEvent() {
-        sendPizzas(null, null);
+        sendPizzas(20, 300);
     }
 
     @GetMapping("/send")
