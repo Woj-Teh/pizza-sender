@@ -65,7 +65,7 @@ public class PizzaSenderController {
 
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationEvent() {
-        sendPizzas(20, 300);
+        sendPizzas(1, 1);
     }
 
     @GetMapping("/send")
@@ -94,8 +94,10 @@ public class PizzaSenderController {
 
                 // Use the logger to log the pizza being sent
                 logger.info("Sending pizza: " + randomPizza.getName());
+
             }, i * 1000 / pizzasPerSec, TimeUnit.MILLISECONDS);
         }
+
 
         return ResponseEntity.ok("Sending pizzas in progress!");
     }
